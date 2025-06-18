@@ -1,0 +1,1060 @@
+openapi: 3.0.0
+info:
+  title: AI Life Coach API
+  version: 1.0.0
+servers:
+  - url: https://api.yourapp.com
+  - url: http://localhost:8000
+paths:
+  /coach/message:
+    post:
+      summary: Send a user message to the coach and receive AI response
+      tags:
+        - coach
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoachMessageRequest'
+      responses:
+        '200':
+          description: Coach response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachMessageResponse'
+
+  /coach/voice-message:
+    post:
+      summary: Accept audio, transcribe, and respond with voice
+      tags:
+        - coach
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                audio_file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Transcribed text and AI response text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachVoiceResponse'
+
+  /coach/voice-response:
+    get:
+      summary: Get TTS audio for a given response text
+      tags:
+        - coach
+      parameters:
+        - in: query
+          name: text
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Base64-encoded audio
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: byte
+
+  /coach/context/{user_id}:
+    get:
+      summary: Get user context (goals, blocks, summary, tone)
+      tags:
+        - coach
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoachContext'
+
+  /coach/memory/{user_id}:
+    get:
+      summary: Retrieve current memory vectors or summaries
+      tags:
+        - coach
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Memory entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryList'
+
+  /coach/history/{user_id}:
+    get:
+      summary: Get full or partial chat history
+      tags:
+        - coach
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Chat history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatHistory'
+
+  /onboarding/submit:
+    post:
+      summary: Submit onboarding answers
+      tags:
+        - onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingSubmit'
+      responses:
+        '201':
+          description: Created
+
+  /onboarding/{user_id}:
+    get:
+      summary: Retrieve onboarding data
+      tags:
+        - onboarding
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Onboarding data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingData'
+    put:
+      summary: Update onboarding answers
+      tags:
+        - onboarding
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingSubmit'
+      responses:
+        '200':
+          description: Updated
+
+  /journal/entry:
+    post:
+      summary: Submit a new journal entry
+      tags:
+        - journal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JournalEntrySubmit'
+      responses:
+        '201':
+          description: Created
+
+  /journal/{user_id}:
+    get:
+      summary: Retrieve all journal entries for a user
+      tags:
+        - journal
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntryList'
+
+  /journal/summary/{user_id}:
+    get:
+      summary: Get journal insight summary
+      tags:
+        - journal
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalSummary'
+
+  /journal/{entry_id}:
+    delete:
+      summary: Delete a journal entry
+      tags:
+        - journal
+      parameters:
+        - in: path
+          name: entry_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+
+  /tone/{user_id}:
+    get:
+      summary: Get preferred tone
+      tags:
+        - tone
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tone preference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TonePreference'
+    put:
+      summary: Update tone preference
+      tags:
+        - tone
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TonePreference'
+      responses:
+        '200':
+          description: Updated
+
+  /tone/styles:
+    get:
+      summary: List all supported tone styles
+      tags:
+        - tone
+      responses:
+        '200':
+          description: Available styles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ToneStyle'
+
+  /memory/rebuild/{user_id}:
+    post:
+      summary: Re-embed all context for user
+      tags:
+        - memory
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Memory rebuilt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryRebuildResponse'
+
+  /memory/search/{user_id}:
+    get:
+      summary: Retrieve top-N relevant memories
+      tags:
+        - memory
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: top_n
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: Relevant memories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryList'
+
+  /memory/clear/{user_id}:
+    delete:
+      summary: Clear vector memory for a user
+      tags:
+        - memory
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Cleared
+
+  /user/register:
+    post:
+      summary: Create user
+      tags:
+        - user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+      responses:
+        '201':
+          description: User created
+
+  /user/{user_id}:
+    get:
+      summary: Get user metadata
+      tags:
+        - user
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserData'
+    delete:
+      summary: Delete user account
+      tags:
+        - user
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+
+  /api/info/models:
+    get:
+      tags:
+        - info
+      summary: Retrieve model data.
+      responses:
+        '200':
+          description: Successful response with model data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      type: string
+                    description: List of available model names.
+                  defaults:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: Default models for each functionality.
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  access_token:
+                    type: string
+                    description: JWT access token for authenticated user
+                  token_type:
+                      type: string
+                      description: Type of the token (e.g., "bearer")
+                      example: bearer
+        '400':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /auth/login_with_refresh_logic:
+    post:
+      tags:
+        - auth
+      summary: Log in a user
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Successful login; access token returned in the body and refresh token is set as an HttpOnly cookie.
+          headers:
+            Set-Cookie:
+              description: Contains the refresh token; marked HttpOnly so that it’s inaccessible to JavaScript.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Log in a user
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/private:
+    get:
+      tags:
+        - auth
+      summary: Access protected route
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful access
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Log out a user
+      responses:
+        '200':
+          description: Successful logout
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - auth
+      summary: Reset user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                new_password:
+                  type: string
+              required:
+                - email
+                - new_password
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '400':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /auth/refresh-token:
+    post:
+      tags:
+        - auth
+      summary: Ref/authresh JWT token using email
+      description: Regenerates a JWT token based on the provided email address.
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The email address associated with the user's account.
+              required:
+                - email
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: The new JWT token for the user.
+                  token_type:
+                    type: string
+                    example: "bearer"
+        '400':
+          description: Bad request. The email is not found or is invalid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Invalid email address"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/login:
+    post:
+      tags:
+        - auth
+      summary: Authenticate user
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: User authenticated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: "bearer"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/admin/panel/users/list:
+    get:
+      tags:
+        - admin_panel
+      summary: Retrieve a paginated list of users
+      description: Returns a list of users with optional filters (country, user_id, email) and ordering (activity, signup_date, country, total_files, total_records).
+      operationId: getUsersList
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: The page number to retrieve (for pagination).
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          description: The number of users to return per page (for pagination).
+        - name: country
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter users by country.
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filter by a specific user ID.
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by email address (e.g., partial or exact match).
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [activity, signup_date, country, total_files, total_records]
+          description: Order results by user activity, signup date, country, total_files, or total_records.
+        - name: sort_order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: The sorting order (ascending or descending). Typically defaults to `desc` for dates.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Paginated list of users retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    type: integer
+                    example: 1
+                  page_size:
+                    type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    description: Total number of users matching the filters.
+                    example: 125
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: integer
+                          example: 101
+                        user_email:
+                          type: string
+                          example: "user@example.com"
+                        country:
+                          type: string
+                          example: "US"
+                        attributes:
+                          type: object
+                          description: A JSON object representing user attributes or metadata.
+                          example:
+                            plan: "premium"
+                            language: "en"
+                        signup_date:
+                          type: string
+                          format: date-time
+                          example: "2024-01-01T12:00:00Z"
+                        last_activity_date:
+                          type: string
+                          format: date-time
+                          example: "2024-01-10T09:15:00Z"
+                        number_of_files:
+                          type: integer
+                          example: 5
+                        list_of_file_ids:
+                          type: array
+                          items:
+                            type: integer
+                          example: [123, 124, 125]
+                        number_of_records:
+                          type: integer
+                          example: 150
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    CoachMessageRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+        message:
+          type: string
+        mode:
+          type: string
+          enum: [text, voice]
+      required:
+        - user_id
+        - message
+    CoachMessageResponse:
+      type: object
+      properties:
+        response:
+          type: string
+        usage:
+          type: object
+          description: Token usage details
+    CoachVoiceResponse:
+      type: object
+      properties:
+        transcription:
+          type: string
+        response:
+          type: string
+    CoachContext:
+      type: object
+      properties:
+        goal:
+          type: string
+        block:
+          type: string
+        journal_summary:
+          type: string
+        preferred_tone:
+          type: string
+    MemoryList:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          text:
+            type: string
+          score:
+            type: number
+    ChatHistory:
+      type: array
+      items:
+        type: object
+        properties:
+          timestamp:
+            type: string
+            format: date-time
+          role:
+            type: string
+            enum: [user, coach]
+          message:
+            type: string
+    OnboardingSubmit:
+      type: object
+      properties:
+        user_id:
+          type: string
+        goal:
+          type: string
+        internal_block:
+          type: string
+        extra:
+          type: string
+      required:
+        - user_id
+        - goal
+        - internal_block
+    OnboardingData:
+      allOf:
+        - $ref: '#/components/schemas/OnboardingSubmit'
+        - type: object
+          properties:
+            created_at:
+              type: string
+              format: date-time
+    JournalEntrySubmit:
+      type: object
+      properties:
+        user_id:
+          type: string
+        entry:
+          type: string
+      required:
+        - user_id
+        - entry
+    JournalEntryList:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          entry:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+    JournalSummary:
+      type: object
+      properties:
+        summary:
+          type: string
+    TonePreference:
+      type: object
+      properties:
+        user_id:
+          type: string
+        tone:
+          type: string
+          enum: [spiritual, scientific, neutral]
+      required:
+        - user_id
+        - tone
+    ToneStyle:
+      type: object
+      properties:
+        tone:
+          type: string
+        description:
+          type: string
+    MemoryRebuildResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        rebuilt_at:
+          type: string
+          format: date-time
+    UserRegister:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+    UserData:
+      type: object
+      properties:
+        user_id:
+          type: string
+        email:
+          type: string
+          format: email
+        plan:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: Not authenticated
+    BadRequestError:
+      description: Bad request.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: Bad request
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: Internal server error
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
