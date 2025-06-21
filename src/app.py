@@ -75,14 +75,7 @@ origins = [
     "http://localhost:8080",
     "http://localhost:5174",
     "http://localhost:3000",
-    
-    
-    "https://budgety-ui-70638306280.europe-west1.run.app",
-    "https://dev-budgety-ui-70638306280.us-central1.run.app" , 
-
-    
-    "https://budgety.ai" ,
-    "https://www.budgety.ai"
+     "http://localhost:443",
 
 ]
 
