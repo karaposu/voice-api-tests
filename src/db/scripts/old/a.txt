@@ -1,0 +1,3 @@
+python -m db.scripts.create_budget_db
+python -m db.scripts.fill_budget_tracker_db
+python -m db.scripts.insert_sample_dataset_to_db

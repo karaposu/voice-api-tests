@@ -9,7 +9,7 @@ servers:
   
 paths:
 
-  
+
   /coach/message:
     post:
       summary: Send a user message to the coach and receive AI response
@@ -93,64 +93,6 @@ paths:
                 properties:
                   detail:
                     type: string
-
-
-
-  /api/chat/create:
-    post:
-      tags:
-        - chat
-      summary: Create a new chat session
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChatSessionCreate'
-      responses:
-        '201':
-          description: Chat session created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatSession'
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /api/chat/delete:
-    post:
-      tags:
-        - chat
-      summary: Delete an existing chat session
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChatSessionDelete'
-      responses:
-        '200':
-          description: Chat session deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: deleted
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
                     
         
   /api/info/models:
@@ -232,8 +174,6 @@ paths:
                 properties:
                   detail:
                     type: string
-
-
 
   /auth/login_with_refresh_logic:
     post:
@@ -646,7 +586,6 @@ components:
           type: number
         
         
-    
     ChatContextNotes:
       type: object
       properties:
@@ -687,6 +626,7 @@ components:
           type: string
           
           
+   
             
     ChatHistoryMessage:
       type: object
@@ -717,35 +657,6 @@ components:
         - id
         - message
         - timestamp
-        
-    ChatSessionCreate:
-      type: object
-      properties:
-        title:
-          type: string
-        initial_message:
-          type: string
-      required:
-        - title
-
-    ChatSession:
-      type: object
-      properties:
-        chat_id:
-          type: integer
-        title:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-
-    ChatSessionDelete:
-      type: object
-      properties:
-        chat_id:
-          type: integer
-      required:
-        - chat_id
               
             
     
@@ -781,19 +692,6 @@ components:
               detail:
                 type: string
                 example: Internal server error
-                
-    NotFoundError:
-      description: Resource not found.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              detail:
-                type: string
-                example: Not found
-                
-    
 
   # securitySchemes:
   #   bearerAuth:

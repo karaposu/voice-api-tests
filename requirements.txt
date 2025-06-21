@@ -1,0 +1,15 @@
+llmservice
+pandas
+fastapi
+python-dotenv
+dependency_injector
+passlib
+bcrypt
+sqlalchemy
+indented_logger
+uvicorn
+werkzeug
+
+pyjwt
+email_validator
+python-multipart
