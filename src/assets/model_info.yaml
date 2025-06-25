@@ -1,0 +1,21 @@
+defaults:
+  default_model: gpt-4o-mini
+
+models:
+  
+  gpt-4o:
+    model_type: "api"
+    voice_support: "false"
+  
+  gpt-4o-mini:
+    model_type: "api"
+    voice_support: "false"
+  
+  gpt-4.1-nano:
+    model_type: "api"
+    voice_support: "false"
+   
+
+
+
+  

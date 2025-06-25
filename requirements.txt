@@ -13,3 +13,4 @@ werkzeug
 pyjwt
 email_validator
 python-multipart
+python-jose[cryptography]
