@@ -14,25 +14,61 @@ from fastapi.security import (  # noqa: F401
     OAuth2PasswordBearer,
     SecurityScopes,
 )
-from fastapi.security.api_key import APIKeyCookie, APIKeyHeader, APIKeyQuery  # noqa: F401
+from fastapi.security.api_key import APIKeyCookie, APIKeyHeader, APIKeyQuery
+from fastapi import Depends, HTTPException, Security
 
 from models.extra_models import TokenModel
 
 
 bearer_auth = HTTPBearer()
 
+from jose import jwt, JWTError
+from dotenv import load_dotenv
+
+load_dotenv()
+import os
+# logging.basicConfig(level=logging.DEBUG)
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 def get_token_bearerAuth(credentials: HTTPAuthorizationCredentials = Depends(bearer_auth)) -> TokenModel:
     """
     Check and retrieve authentication information from custom bearer token.
 
-    :param credentials Credentials provided by Authorization header
+    :param credentials: Credentials provided by Authorization header
     :type credentials: HTTPAuthorizationCredentials
     :return: Decoded token information or None if token is invalid
     :rtype: TokenModel | None
     """
+    try:
 
-    ...
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        # Populate TokenModel with the relevant information
+        return TokenModel(sub=user_id)
+        # return user_id
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+# def get_token_bearerAuth(credentials: HTTPAuthorizationCredentials = Depends(bearer_auth)) -> TokenModel:
+#     """
+#     Check and retrieve authentication information from custom bearer token.
+#
+#     :param credentials Credentials provided by Authorization header
+#     :type credentials: HTTPAuthorizationCredentials
+#     :return: Decoded token information or None if token is invalid
+#     :rtype: TokenModel | None
+#     """
+#
+#     ...
 
 
 def get_token_ApiKeyAuth(

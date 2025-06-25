@@ -38,6 +38,7 @@ from core.dependencies import setup_dependencies
 
 
 from apis.chat_api import router as ChatApiRouter
+from apis.messages_api import router as MessageApiRouter
 from apis.info_api import router as InfoApiRouter
 from apis.auth_api import router as AuthApiRouter
 
@@ -112,7 +113,7 @@ app.add_middleware(RequestIDMiddleware)
 # app.include_router(AdminPanelApiRouter)
 app.include_router(AuthApiRouter)
 app.include_router(ChatApiRouter)
-
+app.include_router(MessageApiRouter)
 app.include_router(InfoApiRouter)
 
 # app.include_router(DependenciesApiRouter)
@@ -123,8 +124,6 @@ services = setup_dependencies()
 async def startup_event():
     app.state.services = services
     logger.debug("Configurations loaded and services initialized")
-
-
 
 
 

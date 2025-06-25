@@ -102,8 +102,21 @@ class RegisterService:
                 logger.debug("Adding new user to the database")
                 user_id = user_repository.add_new_user(email, hashed_password)
                 logger.debug(f"User added successfully with ID: {user_id}")
+                self.new_user_id = user_id    
 
-                # Generate a JWT token for the new user
+                # # ─── NEW CODE: create the default chat for this user ───
+                # chat_repo_provider = self.dependencies.chat_repository
+                # chat_repo          = chat_repo_provider(session=session)
+
+                # default_settings = {
+                #     "system_prompt": "You are a helpful assistant."
+                # }
+
+                # chat_row = chat_repo.create_chat(user_id=user_id,
+                #                  settings=default_settings)
+
+
+                                # Generate a JWT token for the new user
                 logger.debug(f"Generating JWT token for user_id: {user_id}")
                 access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
                 access_token = create_access_token(

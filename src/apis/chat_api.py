@@ -1,10 +1,16 @@
-# coding: utf-8
+# here is apis/chat_api.py
 
 from typing import Dict, List  # noqa: F401
 import importlib
 import pkgutil
 
-# from apis.chat_api_base import BaseChatApi
+import logging
+logger = logging.getLogger(__name__)
+
+
+
+
+
 import impl
 
 from fastapi import (  # noqa: F401
@@ -23,12 +29,13 @@ from fastapi import (  # noqa: F401
 )
 
 from models.extra_models import TokenModel  # noqa: F401
-from pydantic import Field
-from typing import List
+from datetime import datetime
+from pydantic import Field, StrictInt
+from typing import Any, Dict, List, Optional
 from typing_extensions import Annotated
-from models.api_chat_history_get500_response import ApiChatHistoryGet500Response
-from models.api_chat_history_post200_response import ApiChatHistoryPost200Response
-from models.chat_history_message import ChatHistoryMessage
+from models.chat_full import ChatFull
+from models.chat_post201_response import ChatPost201Response
+from models.usage_metrics import UsageMetrics
 from security_api import get_token_bearerAuth
 
 router = APIRouter()
@@ -38,42 +45,172 @@ for _, name, _ in pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + "."):
     importlib.import_module(name)
 
 
-@router.get(
-    "/api/chat/history",
+
+from core.containers import Services
+from fastapi import FastAPI, Request, HTTPException
+
+def get_services(request: Request) -> Services:
+    return request.app.state.services     # access the container attached in startup
+
+
+def get_app():
+    from app import app
+    return app
+
+
+@router.delete(
+    "/chat/{chat_id}",
     responses={
-        200: {"model": List[ChatHistoryMessage], "description": "Successfully retrieved history messages."},
-        500: {"model": ApiChatHistoryGet500Response, "description": "Internal Server Error"},
+        204: {"description": "Deleted"},
     },
     tags=["chat"],
-    summary="Retrieve the list of historical messages.",
+    summary="Delete a chat session",
     response_model_by_alias=True,
 )
-async def api_chat_history_get(
+async def chat_chat_id_delete(
+    chat_id: Annotated[StrictInt, Field(description="Target chat identifier")] = Path(..., description="Target chat identifier"),
+) -> None:
+    if not BaseChatApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseChatApi.subclasses[0]().chat_chat_id_delete(chat_id)
+
+
+@router.get(
+    "/chat/{chat_id}",
+    responses={
+        200: {"model": ChatFull, "description": "Aggregated chat data"},
+    },
+    tags=["chat"],
+    response_model_by_alias=True,
+)
+async def chat_chat_id_get(
+    chat_id: Annotated[StrictInt, Field(description="ID of the chat session")] = Path(..., description="ID of the chat session"),
+    offset: Annotated[Optional[StrictInt], Field(description="Messages to skip (pagination)")] = Query(0, description="Messages to skip (pagination)", alias="offset"),
+    limit: Annotated[Optional[StrictInt], Field(description="Max messages to return")] = Query(50, description="Max messages to return", alias="limit"),
+    var_from: Annotated[Optional[datetime], Field(description="Usage report start time")] = Query(None, description="Usage report start time", alias="from"),
+    to: Annotated[Optional[datetime], Field(description="Usage report end time")] = Query(None, description="Usage report end time", alias="to"),
     token_bearerAuth: TokenModel = Security(
         get_token_bearerAuth
     ),
-) -> List[ChatHistoryMessage]:
+) -> ChatFull:
     if not BaseChatApi.subclasses:
         raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseChatApi.subclasses[0]().api_chat_history_get()
+    return await BaseChatApi.subclasses[0]().chat_chat_id_get(chat_id, offset, limit, var_from, to)
+
+
+@router.get(
+    "/chat/{chat_id}/settings",
+    responses={
+        200: {"model": Dict[str, object], "description": "Settings object"},
+    },
+    tags=["chat"],
+    summary="Current settings for a chat",
+    response_model_by_alias=True,
+)
+async def chat_chat_id_settings_get(
+    chat_id: Annotated[StrictInt, Field(description="Target chat identifier")] = Path(..., description="Target chat identifier"),
+    token_bearerAuth: TokenModel = Security(
+        get_token_bearerAuth
+    ),
+) -> Dict[str, object]:
+    if not BaseChatApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseChatApi.subclasses[0]().chat_chat_id_settings_get(chat_id)
+
+
+@router.patch(
+    "/chat/{chat_id}/settings",
+    responses={
+        200: {"model": Dict[str, object], "description": "Updated settings"},
+    },
+    tags=["chat"],
+    summary="Update selected settings fields",
+    response_model_by_alias=True,
+)
+async def chat_chat_id_settings_patch(
+    chat_id: Annotated[StrictInt, Field(description="Target chat identifier")] = Path(..., description="Target chat identifier"),
+    request_body: Optional[Dict[str, Any]] = Body(None, description=""),
+    token_bearerAuth: TokenModel = Security(
+        get_token_bearerAuth
+    ),
+) -> Dict[str, object]:
+    if not BaseChatApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseChatApi.subclasses[0]().chat_chat_id_settings_patch(chat_id, request_body)
+
+
+@router.get(
+    "/chat/{chat_id}/usage",
+    responses={
+        200: {"model": UsageMetrics, "description": "Usage metrics"},
+    },
+    tags=["chat"],
+    summary="Usage &amp; cost metrics for a chat",
+    response_model_by_alias=True,
+)
+async def chat_chat_id_usage_get(
+    chat_id: Annotated[StrictInt, Field(description="Target chat identifier")] = Path(..., description="Target chat identifier"),
+    var_from: Annotated[Optional[datetime], Field(description="Start of reporting window")] = Query(None, description="Start of reporting window", alias="from"),
+    to: Annotated[Optional[datetime], Field(description="End of reporting window")] = Query(None, description="End of reporting window", alias="to"),
+    token_bearerAuth: TokenModel = Security(
+        get_token_bearerAuth
+    ),
+) -> UsageMetrics:
+    if not BaseChatApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseChatApi.subclasses[0]().chat_chat_id_usage_get(chat_id, var_from, to)
+
+
+@router.get(
+    "/chat",
+    responses={
+        200: {"model": List[int], "description": "Array of chat identifiers"},
+    },
+    tags=["chat"],
+    summary="List all chat IDs",
+    response_model_by_alias=True,
+)
+async def chat_get(
+) -> List[int]:
+    if not BaseChatApi.subclasses:
+        raise HTTPException(status_code=500, detail="Not implemented")
+    return await BaseChatApi.subclasses[0]().chat_get()
 
 
 @router.post(
-    "/api/chat/history",
+    "/chat",
     responses={
-        200: {"model": ApiChatHistoryPost200Response, "description": "Successfully added the message to history."},
-        500: {"model": ApiChatHistoryGet500Response, "description": "Internal Server Error"},
+        201: {"model": ChatPost201Response, "description": "Chat created"},
     },
     tags=["chat"],
-    summary="Add a new message to the history.",
+    summary="Create a new chat session",
     response_model_by_alias=True,
 )
-async def api_chat_history_post(
-    chat_history_message: Annotated[ChatHistoryMessage, Field(description="Historical message to store.")] = Body(None, description="Historical message to store."),
-    token_bearerAuth: TokenModel = Security(
-        get_token_bearerAuth
-    ),
-) -> ApiChatHistoryPost200Response:
-    if not BaseChatApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseChatApi.subclasses[0]().api_chat_history_post(chat_history_message)
+async def chat_post(
+    token_bearerAuth: TokenModel = Security(get_token_bearerAuth),
+    services: Services = Depends(get_services),
+) -> ChatPost201Response:
+    
+    # print(" >................................................................................")
+    # print(token_bearerAuth)
+    
+    
+    if token_bearerAuth is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid bearer token",
+        )
+    
+    try:
+        logger.debug(f"new chat creation request")
+       
+        user_id = token_bearerAuth.sub
+        from impl.services.chat.create_chat_service import CreateChatService
+        p = CreateChatService( user_id,  dependencies=services)
+        
+        return p.response
+
+        # return rh.handle_login_with_refresh(email, password, response)
+    except Exception as e:
+        logger.error(f"Error processing file: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")

@@ -100,21 +100,17 @@ def get_request_handler():
 )
 async def auth_register_post(
     auth_register_post_request: AuthRegisterPostRequest = Body(None, description=""),
-    services: Services = Depends(get_services),
 ) -> AuthRegisterPost200Response:
     try:
         logger.debug("auth_register_post is called")
         logger.debug(f"incoming data: {auth_register_post_request} ")
-        
-        reg = RegisterService(auth_register_post_request, dependencies=services)
-        
-        # create the starter chat in a new session
-        from impl.services.chat.create_chat_service import CreateChatService
-        CreateChatService(user_id=reg.new_user_id, dependencies=services)
+        # rh = get_request_handler()
 
-        logger.debug("new chat created for user")
+        dependency=get_app().state.services
         
-        return reg.response
+        # dependency = rh.app.state.services
+        p = RegisterService(auth_register_post_request, dependencies=dependency)
+        return p.response
         
 
     except Exception as e:
@@ -139,19 +135,21 @@ async def auth_login_with_refresh_logic_post(
     response: Response,
     email: StrictStr = Form(..., description="User email"),
     password: StrictStr = Form(..., description="User password"),
-    services: Services = Depends(get_services),
     
 ) -> AuthLoginWithRefreshLogicPost200Response:
     try:
         logger.debug(f"[raw incoming package] email {email}, password {password}")
-      
+        # rh = get_request_handler()
+
+        dependency=get_app().state.services
+
         class MyRequest:
             def __init__(self):
                 self.email = email
                 self.password = password
         
         mr = MyRequest()
-        p = LoginWithRefreshService(mr, dependencies=services, response=response)
+        p = LoginWithRefreshService(mr, dependencies=dependency, response=response)
         
         return p.response
 
@@ -246,11 +244,10 @@ async def auth_private_get(
 )
 async def auth_reset_password_post(
     auth_reset_password_post_request: AuthResetPasswordPostRequest = Body(None, description=""),
-    services: Services = Depends(get_services),
 ) -> AuthLogoutPost200Response:
     try:
         
-        
+        dependency=get_app().state.services
 
         from impl.services.auth.user_services import ResetPasswordService
         p=ResetPasswordService(auth_reset_password_post_request)

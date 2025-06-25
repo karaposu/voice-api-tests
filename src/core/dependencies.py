@@ -17,25 +17,14 @@ def setup_dependencies():
 
     # Resolve absolute paths
     main_db_path = os.path.abspath(main_db_path)
-    # bank_info_db_path = os.path.abspath(bank_info_db_path)
-    # exchange_rate_db_path = os.path.abspath(exchange_rate_db_path)
-    # fixed_info_db_path = os.path.abspath(fixed_info_db_path)
-
-    # categories_yaml_path = 'assets/config/categories.yaml'
-
+   
     # Create database URLs
     main_db_url = f"sqlite:///{main_db_path}"
-    # bank_info_db_url = f"sqlite:///{bank_info_db_path}"
-    # exchange_rate_db_url = f"sqlite:///{exchange_rate_db_path}"
-    # fixed_info_db_url = f"sqlite:///{fixed_info_db_path}"
-
-    # Initialize the services container
+    
     services = Services()
     services.config.from_dict({
         'db_url': main_db_url,
-        # 'bank_info_db_url': bank_info_db_url,
-        # 'exchange_rate_db_url': exchange_rate_db_url,
-        # 'fixed_info_db_url': fixed_info_db_url,
+      
     })
 
     return services
