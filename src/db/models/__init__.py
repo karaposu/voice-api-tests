@@ -8,10 +8,11 @@ from .login_time_log import LoginTimeLog
 
 from .chat import Chat
 from .message import Message
+from .affirmation import Affirmation
 
 
 __all__ = [
     'Base', 'get_current_time', 'User', 'UserDetails', 'LoginTimeLog',
-    'Chat', 'Message'
+    'Chat', 'Message', 'Affirmation'
 
 ]

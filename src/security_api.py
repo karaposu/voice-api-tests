@@ -44,17 +44,26 @@ def get_token_bearerAuth(credentials: HTTPAuthorizationCredentials = Depends(bea
     :rtype: TokenModel | None
     """
     try:
-
+        logger.debug(f"Attempting to decode token: {credentials.credentials[:20]}...")
+        logger.debug(f"Using SECRET_KEY: {SECRET_KEY[:10]}...")
+        
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("sub")
+        logger.debug(f"Decoded payload: {payload}")
+        
         if user_id is None:
+            logger.error("No 'sub' field in token payload")
             raise HTTPException(status_code=401, detail="Invalid token")
 
         # Populate TokenModel with the relevant information
         return TokenModel(sub=user_id)
         # return user_id
 
-    except JWTError:
+    except JWTError as e:
+        logger.error(f"JWT decode error: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        logger.error(f"Unexpected error in token validation: {type(e).__name__}: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid token")
 
 

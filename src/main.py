@@ -35,7 +35,7 @@ if __name__ == "__main__":
         "app:app",  # Assuming your FastAPI app is defined in main.py
         host="0.0.0.0",
         # port=443,  # Port 443 for HTTPS
-        port=5173, 
+        port=8188, 
         log_level="debug",
         # ssl_certfile=ssl_certfile,  # Path to the SSL certificate
         # ssl_keyfile=ssl_keyfile     # Path to the SSL private key

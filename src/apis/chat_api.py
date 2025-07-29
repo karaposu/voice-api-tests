@@ -70,10 +70,7 @@ def get_app():
 async def chat_chat_id_delete(
     chat_id: Annotated[StrictInt, Field(description="Target chat identifier")] = Path(..., description="Target chat identifier"),
 ) -> None:
-    if not BaseChatApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseChatApi.subclasses[0]().chat_chat_id_delete(chat_id)
-
+    pass
 
 @router.get(
     "/chat/{chat_id}",
@@ -93,9 +90,7 @@ async def chat_chat_id_get(
         get_token_bearerAuth
     ),
 ) -> ChatFull:
-    if not BaseChatApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseChatApi.subclasses[0]().chat_chat_id_get(chat_id, offset, limit, var_from, to)
+    pass
 
 
 @router.get(
@@ -113,9 +108,7 @@ async def chat_chat_id_settings_get(
         get_token_bearerAuth
     ),
 ) -> Dict[str, object]:
-    if not BaseChatApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseChatApi.subclasses[0]().chat_chat_id_settings_get(chat_id)
+    pass
 
 
 @router.patch(
@@ -134,9 +127,7 @@ async def chat_chat_id_settings_patch(
         get_token_bearerAuth
     ),
 ) -> Dict[str, object]:
-    if not BaseChatApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseChatApi.subclasses[0]().chat_chat_id_settings_patch(chat_id, request_body)
+   pass
 
 
 @router.get(
@@ -156,10 +147,7 @@ async def chat_chat_id_usage_get(
         get_token_bearerAuth
     ),
 ) -> UsageMetrics:
-    if not BaseChatApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseChatApi.subclasses[0]().chat_chat_id_usage_get(chat_id, var_from, to)
-
+   pass
 
 @router.get(
     "/chat",
@@ -172,9 +160,7 @@ async def chat_chat_id_usage_get(
 )
 async def chat_get(
 ) -> List[int]:
-    if not BaseChatApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseChatApi.subclasses[0]().chat_get()
+   pass
 
 
 @router.post(
@@ -191,9 +177,7 @@ async def chat_post(
     services: Services = Depends(get_services),
 ) -> ChatPost201Response:
     
-    # print(" >................................................................................")
-    # print(token_bearerAuth)
-    
+
     
     if token_bearerAuth is None:
         raise HTTPException(

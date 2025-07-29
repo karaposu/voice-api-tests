@@ -11,6 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from db.repositories.user_repository import UserRepository
 from db.repositories.chat_repository import ChatRepository
 from db.repositories.message_repository import MessageRepository
+from db.repositories.affirmation_repository import AffirmationRepository
 # from db.repositories.file_repository import FileRepository
 from db.session import get_engine
 import yaml
@@ -49,6 +50,11 @@ class Services(containers.DeclarativeContainer):
 
     message_repository = providers.Factory(
         MessageRepository,
+        session=providers.Dependency()
+    )
+
+    affirmation_repository = providers.Factory(
+        AffirmationRepository,
         session=providers.Dependency()
     )
 

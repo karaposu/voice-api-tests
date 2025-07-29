@@ -41,6 +41,7 @@ from apis.chat_api import router as ChatApiRouter
 from apis.messages_api import router as MessageApiRouter
 from apis.info_api import router as InfoApiRouter
 from apis.auth_api import router as AuthApiRouter
+from apis.affirmations_api import router as AffirmationsApiRouter
 
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -115,15 +116,23 @@ app.include_router(AuthApiRouter)
 app.include_router(ChatApiRouter)
 app.include_router(MessageApiRouter)
 app.include_router(InfoApiRouter)
+app.include_router(AffirmationsApiRouter)
 
 # app.include_router(DependenciesApiRouter)
 
 services = setup_dependencies()
 
-@app.on_event("startup")
-async def startup_event():
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     app.state.services = services
     logger.debug("Configurations loaded and services initialized")
+    yield
+    # Shutdown (if needed)
+
+app.router.lifespan_context = lifespan
 
 
 

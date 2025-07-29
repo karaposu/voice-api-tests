@@ -105,7 +105,7 @@ async def auth_register_post(
     try:
         logger.debug("auth_register_post is called")
         logger.debug(f"incoming data: {auth_register_post_request} ")
-        
+      
         reg = RegisterService(auth_register_post_request, dependencies=services)
         
         # create the starter chat in a new session
