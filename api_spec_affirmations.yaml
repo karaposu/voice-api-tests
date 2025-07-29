@@ -1,0 +1,455 @@
+openapi: 3.0.3
+info:
+  title: PowerManifest Affirmations API
+  description: API for managing personalized affirmations in the PowerManifest life coaching app
+  version: 1.0.0
+  contact:
+    name: PowerManifest API Support
+    email: api@powermanifest.com
+
+servers:
+  - url: https://api.powermanifest.com/v1
+    description: Production server
+  - url: https://staging-api.powermanifest.com/v1
+    description: Staging server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /affirmations:
+    post:
+      summary: Create a new affirmation
+      description: Creates a user-generated affirmation
+      operationId: createAffirmation
+      tags:
+        - Affirmations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: The affirmation text
+                  example: "I am worthy of abundance and success"
+                  maxLength: 500
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Affirmation created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  affirmation_id:
+                    type: string
+                    format: uuid
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                  text:
+                    type: string
+                    example: "I am worthy of abundance and success"
+                  created_at:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      summary: Get user's affirmations
+      description: Retrieve all affirmations for the authenticated user
+      operationId: getAffirmations
+      tags:
+        - Affirmations
+      parameters:
+        - name: category
+          in: query
+          description: Filter by affirmation category
+          schema:
+            $ref: '#/components/schemas/AffirmationCategory'
+        - name: scheduled_only
+          in: query
+          description: Return only scheduled affirmations
+          schema:
+            type: boolean
+            default: false
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of affirmations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  affirmations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Affirmation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /affirmations/ai-create:
+    post:
+      summary: Generate AI-powered affirmations
+      description: Create personalized affirmations using AI based on user context
+      operationId: aiCreateAffirmations
+      tags:
+        - Affirmations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - context_corpus
+                - style
+                - uslub
+              properties:
+                context_corpus:
+                  type: string
+                  description: User's context data (goals, blocks, journal entries, etc.)
+                  example: "Goals: Financial freedom, confidence. Blocks: I'm not good enough, imposter syndrome"
+                affirmation_category:
+                  $ref: '#/components/schemas/AffirmationCategory'
+                amount:
+                  type: integer
+                  description: Number of affirmations to generate
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+                  example: 5
+                style:
+                  type: string
+                  description: Communication style preference
+                  enum: [spiritual, scientific, balanced, motivational]
+                  example: "balanced"
+                uslub:
+                  type: string
+                  description: Tone and approach style
+                  enum: [gentle, powerful, encouraging, direct, nurturing]
+                  example: "encouraging"
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: AI affirmations created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  affirmation_ids:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                    example: ["123e4567-e89b-12d3-a456-426614174000", "987fcdeb-51a2-43d7-8f9e-123456789abc"]
+                  affirmations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Affirmation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /affirmations/{affirmation_id}:
+    put:
+      summary: Edit an affirmation
+      description: Update an existing affirmation's text and voice settings
+      operationId: editAffirmation
+      tags:
+        - Affirmations
+      parameters:
+        - name: affirmation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: Updated affirmation text
+                  example: "I am confident and deserving of all good things"
+                  maxLength: 500
+                playing_voice:
+                  type: string
+                  description: Voice model/style for audio playback
+                  enum: [gentle_female, confident_male, soothing_neutral, powerful_female, calm_male]
+                  example: "gentle_female"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Affirmation updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  affirmation_id:
+                    type: string
+                    format: uuid
+                  text:
+                    type: string
+                  playing_voice:
+                    type: string
+                  updated_at:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete an affirmation
+      description: Remove an affirmation from the user's collection
+      operationId: deleteAffirmation
+      tags:
+        - Affirmations
+      parameters:
+        - name: affirmation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Affirmation deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /affirmations/{affirmation_id}/schedule:
+    post:
+      summary: Schedule an affirmation
+      description: Set up notification schedule for an affirmation
+      operationId: scheduleAffirmation
+      tags:
+        - Affirmations
+      parameters:
+        - name: affirmation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - schedule_config
+              properties:
+                schedule_config:
+                  $ref: '#/components/schemas/ScheduleConfig'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Affirmation scheduled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  affirmation_id:
+                    type: string
+                    format: uuid
+                  schedule_config:
+                    $ref: '#/components/schemas/ScheduleConfig'
+                  next_notification:
+                    type: string
+                    format: date-time
+                    description: When the next notification will be sent
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Remove affirmation schedule
+      description: Cancel scheduled notifications for an affirmation
+      operationId: unscheduleAffirmation
+      tags:
+        - Affirmations
+      parameters:
+        - name: affirmation_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Schedule removed successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Affirmation:
+      type: object
+      properties:
+        affirmation_id:
+          type: string
+          format: uuid
+        text:
+          type: string
+          example: "I am worthy of abundance and success"
+        category:
+          $ref: '#/components/schemas/AffirmationCategory'
+        source:
+          type: string
+          enum: [user_created, ai_generated]
+        playing_voice:
+          type: string
+          nullable: true
+        is_scheduled:
+          type: boolean
+        schedule_config:
+          $ref: '#/components/schemas/ScheduleConfig'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AffirmationCategory:
+      type: string
+      enum: 
+        - financial_freedom
+        - love_relationships
+        - health_energy
+        - career_success
+        - confidence_growth
+        - inner_peace_spiritual
+        - family_parenting
+        - custom
+      example: "confidence_growth"
+
+    ScheduleConfig:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+          description: Whether scheduling is active
+        time_slots:
+          type: array
+          description: Specific times to send notifications
+          items:
+            type: object
+            properties:
+              time:
+                type: string
+                format: time
+                description: Time in HH:MM format
+                example: "08:00"
+              days:
+                type: array
+                description: Days of week (0=Sunday, 6=Saturday)
+                items:
+                  type: integer
+                  minimum: 0
+                  maximum: 6
+                example: [1, 2, 3, 4, 5]
+              timezone:
+                type: string
+                description: User's timezone
+                example: "America/New_York"
+        frequency:
+          type: string
+          enum: [daily, weekly, custom]
+          default: daily
+        notification_type:
+          type: string
+          enum: [push_notification, email, both]
+          default: push_notification
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Invalid request parameters"
+              message:
+                type: string
+                example: "Affirmation text cannot be empty"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Unauthorized"
+              message:
+                type: string
+                example: "Valid authentication token required"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Not found"
+              message:
+                type: string
+                example: "Affirmation not found"

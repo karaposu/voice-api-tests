@@ -9,8 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 
-
-
 import impl
 
 from fastapi import (  # noqa: F401
@@ -66,31 +64,56 @@ def get_app():
     tags=["chat"],
     summary="Delete a chat session",
     response_model_by_alias=True,
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def chat_chat_id_delete(
     chat_id: Annotated[StrictInt, Field(description="Target chat identifier")] = Path(..., description="Target chat identifier"),
+    token_bearerAuth: TokenModel = Security(get_token_bearerAuth),
+    services: Services = Depends(get_services),
 ) -> None:
-    pass
+    
+    if token_bearerAuth is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid bearer token",
+        )
+    
+    try:
+        logger.debug(f"delete chat request for chat_id={chat_id}")
+       
+        user_id = token_bearerAuth.sub
+        from impl.services.chat.delete_chat_service import DeleteChatService
+        p = DeleteChatService(chat_id, user_id, dependencies=services)
+        
+        # For 204 No Content, we return None
+        return None
 
-@router.get(
-    "/chat/{chat_id}",
-    responses={
-        200: {"model": ChatFull, "description": "Aggregated chat data"},
-    },
-    tags=["chat"],
-    response_model_by_alias=True,
-)
-async def chat_chat_id_get(
-    chat_id: Annotated[StrictInt, Field(description="ID of the chat session")] = Path(..., description="ID of the chat session"),
-    offset: Annotated[Optional[StrictInt], Field(description="Messages to skip (pagination)")] = Query(0, description="Messages to skip (pagination)", alias="offset"),
-    limit: Annotated[Optional[StrictInt], Field(description="Max messages to return")] = Query(50, description="Max messages to return", alias="limit"),
-    var_from: Annotated[Optional[datetime], Field(description="Usage report start time")] = Query(None, description="Usage report start time", alias="from"),
-    to: Annotated[Optional[datetime], Field(description="Usage report end time")] = Query(None, description="Usage report end time", alias="to"),
-    token_bearerAuth: TokenModel = Security(
-        get_token_bearerAuth
-    ),
-) -> ChatFull:
-    pass
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404)
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting chat: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+
+# @router.get(
+#     "/chat/{chat_id}",
+#     responses={
+#         200: {"model": ChatFull, "description": "Aggregated chat data"},
+#     },
+#     tags=["chat"],
+#     response_model_by_alias=True,
+# )
+# async def chat_chat_id_get(
+#     chat_id: Annotated[StrictInt, Field(description="ID of the chat session")] = Path(..., description="ID of the chat session"),
+#     offset: Annotated[Optional[StrictInt], Field(description="Messages to skip (pagination)")] = Query(0, description="Messages to skip (pagination)", alias="offset"),
+#     limit: Annotated[Optional[StrictInt], Field(description="Max messages to return")] = Query(50, description="Max messages to return", alias="limit"),
+#     var_from: Annotated[Optional[datetime], Field(description="Usage report start time")] = Query(None, description="Usage report start time", alias="from"),
+#     to: Annotated[Optional[datetime], Field(description="Usage report end time")] = Query(None, description="Usage report end time", alias="to"),
+#     token_bearerAuth: TokenModel = Security(
+#         get_token_bearerAuth
+#     ),
+# ) -> ChatFull:
+#     pass
 
 
 @router.get(
@@ -159,8 +182,28 @@ async def chat_chat_id_usage_get(
     response_model_by_alias=True,
 )
 async def chat_get(
+    token_bearerAuth: TokenModel = Security(get_token_bearerAuth),
+    services: Services = Depends(get_services),
 ) -> List[int]:
-   pass
+    
+    if token_bearerAuth is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid bearer token",
+        )
+    
+    try:
+        logger.debug(f"list chats request for user")
+       
+        user_id = token_bearerAuth.sub
+        from impl.services.chat.list_chats_service import ListChatsService
+        p = ListChatsService(user_id, dependencies=services)
+        
+        return p.response
+
+    except Exception as e:
+        logger.error(f"Error listing chats: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 
 @router.post(

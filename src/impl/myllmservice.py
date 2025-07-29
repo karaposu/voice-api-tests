@@ -6,6 +6,7 @@ import logging
 import asyncio
 from llmservice import BaseLLMService, GenerationRequest, GenerationResult
 from typing import Optional, Union
+from . import prompts
 
 
 class MyLLMService(BaseLLMService):
@@ -26,24 +27,10 @@ class MyLLMService(BaseLLMService):
     def generate_ai_answer(self, chat_history: str, user_msg=None, model = None,
     ) -> GenerationResult:
         
-        formatted_prompt = f"""Here is the chat_history :
-                            {chat_history}
-
-                            Here is last user message:
-                            {user_msg}
-                            
-                            Task Description:
-                            Your job is to generate answer as a life coach. be human like but also big brother like 
-                            
-
-                            """
-                             # Give the output in strict JSON format
-        # pipeline_config = [
-        #     {
-        #         "type": "ConvertToDict",
-        #         "params": {},
-        #     }
-        # ]
+        formatted_prompt = prompts.GENERATE_AI_ANSWER_PROMPT.format(
+            chat_history=chat_history,
+            user_msg=user_msg
+        )
        
         
         if model is None:
@@ -75,25 +62,12 @@ class MyLLMService(BaseLLMService):
         Returns:
             GenerationResult containing the generated affirmations
         """
-        formatted_prompt = f"""Generate {count} positive affirmations based on the following context:
-            
-Context: {context}
-{f'Category: {category}' if category else ''}
-
-Requirements:
-1. Create powerful, personal affirmations in first person (I am, I have, I can)
-2. Make them specific to the given context
-3. Keep them concise and memorable
-4. Make them positive and present-tense
-5. Return as a JSON array of objects with 'content' field
-
-Example format:
-[
-    {{"content": "I am confident in my abilities"}},
-    {{"content": "I embrace challenges as opportunities to grow"}}
-]
-
-Generate the affirmations now:"""
+        category_line = f'Category: {category}' if category else ''
+        formatted_prompt = prompts.GENERATE_AFFIRMATIONS_PROMPT.format(
+            count=count,
+            context=context,
+            category_line=category_line
+        )
 
         if model is None:
             model = "gpt-4o-mini"

@@ -77,3 +77,76 @@ class ChatRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database error while fetching chat",
             )
+
+    def get_chats_by_user(self, user_id: int) -> list[Chat]:
+        """
+        Fetch all chats for a specific user.
+
+        Parameters
+        ----------
+        user_id : int
+            The user ID to filter chats by.
+
+        Returns
+        -------
+        list[Chat]
+            List of Chat instances for the user, ordered by creation date (newest first).
+        """
+        try:
+            return (
+                self.session
+                    .query(Chat)
+                    .filter(Chat.user_id == user_id)
+                    .order_by(Chat.created_at.desc())
+                    .all()
+            )
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+            logger.error("DB error while fetching chats for user_id %s: %s", user_id, exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error while fetching user chats",
+            )
+
+    def delete_chat(self, chat_id: int, user_id: int) -> bool:
+        """
+        Delete a chat by ID, ensuring the user owns it.
+
+        Parameters
+        ----------
+        chat_id : int
+            The chat ID to delete.
+        user_id : int
+            The user ID to verify ownership.
+
+        Returns
+        -------
+        bool
+            True if deleted successfully, False if chat not found or user doesn't own it.
+        """
+        try:
+            # First check if the chat exists and belongs to the user
+            chat = (
+                self.session
+                    .query(Chat)
+                    .filter(Chat.id == chat_id)
+                    .filter(Chat.user_id == user_id)
+                    .first()
+            )
+            
+            if not chat:
+                return False
+            
+            # Delete the chat (cascade will handle related messages)
+            self.session.delete(chat)
+            self.session.commit()
+            logger.debug("Chat deleted (id=%s user_id=%s)", chat_id, user_id)
+            return True
+            
+        except SQLAlchemyError as exc:
+            self.session.rollback()
+            logger.error("DB error while deleting chat_id %s: %s", chat_id, exc, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error while deleting chat",
+            )

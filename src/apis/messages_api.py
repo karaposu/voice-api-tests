@@ -107,9 +107,7 @@ async def chat_chat_id_messages_message_id_get(
         get_token_bearerAuth
     ),
 ) -> ChatMessage:
-    if not BaseMessagesApi.subclasses:
-        raise HTTPException(status_code=500, detail="Not implemented")
-    return await BaseMessagesApi.subclasses[0]().chat_chat_id_messages_message_id_get(chat_id, message_id)
+    pass
 
 
 @router.post(

@@ -1,0 +1,323 @@
+openapi: 3.0.0
+info:
+  title: AI Life Coach API
+  version: 1.0.0
+servers:
+  - url: https://api.yourapp.com
+  - url: http://localhost:8000
+  
+
+paths:
+
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  access_token:
+                    type: string
+                    description: JWT access token for authenticated user
+                  token_type:
+                      type: string
+                      description: Type of the token (e.g., "bearer")
+                      example: bearer
+        '400':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+
+
+  /auth/login_with_refresh_logic:
+    post:
+      tags:
+        - auth
+      summary: Log in a user
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Successful login; access token returned in the body and refresh token is set as an HttpOnly cookie.
+          headers:
+            Set-Cookie:
+              description: Contains the refresh token; marked HttpOnly so that it’s inaccessible to JavaScript.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Log in a user
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/private:
+    get:
+      tags:
+        - auth
+      summary: Access protected route
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful access
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Log out a user
+      responses:
+        '200':
+          description: Successful logout
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - auth
+      summary: Reset user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                new_password:
+                  type: string
+              required:
+                - email
+                - new_password
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        '400':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+
+  /auth/refresh-token:
+    post:
+      tags:
+        - auth
+      summary: Ref/authresh JWT token using email
+      description: Regenerates a JWT token based on the provided email address.
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The email address associated with the user's account.
+              required:
+                - email
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: The new JWT token for the user.
+                  token_type:
+                    type: string
+                    example: "bearer"
+        '400':
+          description: Bad request. The email is not found or is invalid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Invalid email address"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  
+
+components:
+  schemas:
+    
+            
+
+  responses:
+    UnauthorizedError:
+      description: Authentication information is missing or invalid.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: Not authenticated
+    BadRequestError:
+      description: Bad request.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: Bad request
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: Internal server error
+                
+    NotFoundError:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: Not found
+                 
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+
+
+
+

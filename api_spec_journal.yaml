@@ -1,0 +1,657 @@
+openapi: 3.0.3
+info:
+  title: PowerManifest Journal API
+  description: API for managing personal journal entries in the PowerManifest life coaching app
+  version: 1.0.0
+  contact:
+    name: PowerManifest API Support
+    email: api@powermanifest.com
+
+servers:
+  - url: https://api.powermanifest.com/v1
+    description: Production server
+  - url: https://staging-api.powermanifest.com/v1
+    description: Staging server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /journal/entries:
+    post:
+      summary: Create a new journal entry
+      description: Creates a new personal reflection entry for the user
+      operationId: createJournalEntry
+      tags:
+        - Journal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  description: The journal entry text content
+                  example: "Had a breakthrough today working on my confidence. The morning affirmations are really starting to sink in."
+                  maxLength: 10000
+                mood:
+                  $ref: '#/components/schemas/MoodType'
+                entry_type:
+                  type: string
+                  enum: [text, voice_transcript, quick_checkin]
+                  default: text
+                  description: How the entry was created
+                voice_note_url:
+                  type: string
+                  format: uri
+                  description: URL to original voice recording (if applicable)
+                  nullable: true
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: User-defined tags for categorization
+                  example: ["confidence", "breakthrough", "affirmations"]
+                  maxItems: 10
+                is_private:
+                  type: boolean
+                  default: true
+                  description: Whether entry should be excluded from AI coaching context
+      responses:
+        '201':
+          description: Journal entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      summary: Get journal entries
+      description: Retrieve user's journal entries with filtering and pagination
+      operationId: getJournalEntries
+      tags:
+        - Journal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Number of entries to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of entries to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: date_from
+          in: query
+          description: Filter entries from this date (inclusive)
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: date_to
+          in: query
+          description: Filter entries to this date (inclusive)
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+        - name: mood
+          in: query
+          description: Filter by mood type
+          schema:
+            $ref: '#/components/schemas/MoodType'
+        - name: tags
+          in: query
+          description: Filter by tags (comma-separated)
+          schema:
+            type: string
+            example: "confidence,breakthrough"
+        - name: search
+          in: query
+          description: Search in entry content
+          schema:
+            type: string
+            example: "affirmations"
+        - name: sort_by
+          in: query
+          description: Sort entries by field
+          schema:
+            type: string
+            enum: [created_at, updated_at, mood]
+            default: created_at
+        - name: sort_order
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: List of journal entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JournalEntry'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  insights:
+                    type: object
+                    description: AI-generated insights about journal patterns
+                    properties:
+                      mood_trend:
+                        type: string
+                        description: Overall mood trend analysis
+                        example: "Your mood has been improving over the past week"
+                      common_themes:
+                        type: array
+                        items:
+                          type: string
+                        description: Recurring themes in recent entries
+                        example: ["confidence building", "career progress", "relationships"]
+                      suggestion:
+                        type: string
+                        description: AI coaching suggestion based on patterns
+                        example: "Consider exploring why confidence is such a recurring theme"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /journal/entries/{entry_id}:
+    get:
+      summary: Get a specific journal entry
+      description: Retrieve a single journal entry by ID
+      operationId: getJournalEntry
+      tags:
+        - Journal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: entry_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Journal entry details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update a journal entry
+      description: Update an existing journal entry
+      operationId: updateJournalEntry
+      tags:
+        - Journal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: entry_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Updated journal entry content
+                  maxLength: 10000
+                mood:
+                  $ref: '#/components/schemas/MoodType'
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 10
+                is_private:
+                  type: boolean
+                  description: Whether entry should be excluded from AI coaching context
+      responses:
+        '200':
+          description: Journal entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete a journal entry
+      description: Remove a journal entry permanently
+      operationId: deleteJournalEntry
+      tags:
+        - Journal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: entry_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Journal entry deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /journal/entries/search:
+    get:
+      summary: Advanced search in journal entries
+      description: Search journal entries with advanced filters and AI-powered semantic search
+      operationId: searchJournalEntries
+      tags:
+        - Journal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: Search query (supports semantic search)
+          schema:
+            type: string
+            example: "times when I felt confident about my career"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: date_range
+          in: query
+          description: Date range filter
+          schema:
+            type: string
+            enum: [last_week, last_month, last_3_months, last_year, all_time]
+            default: all_time
+        - name: include_ai_analysis
+          in: query
+          description: Include AI analysis of search results
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Search results with relevance scoring
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/JournalEntry'
+                        - type: object
+                          properties:
+                            relevance_score:
+                              type: number
+                              format: float
+                              minimum: 0
+                              maximum: 1
+                              description: Relevance score for the search query
+                            matched_phrases:
+                              type: array
+                              items:
+                                type: string
+                              description: Phrases that matched the search query
+                  ai_analysis:
+                    type: object
+                    description: AI analysis of search results
+                    properties:
+                      summary:
+                        type: string
+                        description: Summary of findings from search results
+                      patterns:
+                        type: array
+                        items:
+                          type: string
+                        description: Patterns identified across matching entries
+                      insights:
+                        type: string
+                        description: AI coaching insights based on search results
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /journal/analytics:
+    get:
+      summary: Get journal analytics and insights
+      description: Get comprehensive analytics about journaling patterns and AI insights
+      operationId: getJournalAnalytics
+      tags:
+        - Journal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          description: Time period for analytics
+          schema:
+            type: string
+            enum: [week, month, quarter, year]
+            default: month
+      responses:
+        '200':
+          description: Journal analytics and insights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statistics:
+                    type: object
+                    properties:
+                      total_entries:
+                        type: integer
+                        description: Total number of entries in period
+                      entries_this_period:
+                        type: integer
+                        description: Entries in selected period
+                      streak_days:
+                        type: integer
+                        description: Current consecutive journaling days
+                      avg_entry_length:
+                        type: number
+                        description: Average words per entry
+                      most_active_day:
+                        type: string
+                        description: Day of week with most entries
+                  mood_analysis:
+                    type: object
+                    properties:
+                      mood_distribution:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        description: Count of entries by mood type
+                        example:
+                          great: 15
+                          good: 12
+                          okay: 8
+                          low: 3
+                      mood_trend:
+                        type: string
+                        enum: [improving, stable, declining]
+                        description: Overall mood trend
+                      avg_mood_score:
+                        type: number
+                        format: float
+                        description: Average mood score (1-5 scale)
+                  themes_analysis:
+                    type: object
+                    properties:
+                      top_themes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            theme:
+                              type: string
+                            frequency:
+                              type: integer
+                            sentiment:
+                              type: string
+                              enum: [positive, neutral, negative]
+                        description: Most frequent themes in entries
+                      emerging_patterns:
+                        type: array
+                        items:
+                          type: string
+                        description: New patterns AI has identified
+                  ai_insights:
+                    type: object
+                    properties:
+                      growth_areas:
+                        type: array
+                        items:
+                          type: string
+                        description: Areas where user is showing growth
+                      focus_suggestions:
+                        type: array
+                        items:
+                          type: string
+                        description: Areas AI suggests user focus on
+                      coaching_recommendations:
+                        type: string
+                        description: Personalized coaching recommendations
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /journal/export:
+    get:
+      summary: Export journal entries
+      description: Export user's journal entries in various formats
+      operationId: exportJournalEntries
+      tags:
+        - Journal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          required: true
+          description: Export format
+          schema:
+            type: string
+            enum: [json, pdf, txt, csv]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: include_private
+          in: query
+          description: Include private entries in export
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Exported journal data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                    format: uri
+                    description: Temporary URL to download the export file
+                  expires_at:
+                    type: string
+                    format: date-time
+                    description: When the download URL expires
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    JournalEntry:
+      type: object
+      properties:
+        entry_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the journal entry
+        content:
+          type: string
+          description: The journal entry text content
+        mood:
+          $ref: '#/components/schemas/MoodType'
+        entry_type:
+          type: string
+          enum: [text, voice_transcript, quick_checkin]
+          description: How the entry was created
+        voice_note_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to original voice recording
+        tags:
+          type: array
+          items:
+            type: string
+          description: User-defined tags
+        is_private:
+          type: boolean
+          description: Whether entry is excluded from AI coaching context
+        word_count:
+          type: integer
+          description: Number of words in the entry
+        reading_time_minutes:
+          type: integer
+          description: Estimated reading time in minutes
+        created_at:
+          type: string
+          format: date-time
+          description: When the entry was created
+        updated_at:
+          type: string
+          format: date-time
+          description: When the entry was last updated
+        ai_processed:
+          type: boolean
+          description: Whether AI has processed this entry for insights
+        ai_summary:
+          type: string
+          nullable: true
+          description: AI-generated summary of the entry (if processed)
+
+    MoodType:
+      type: string
+      enum: [great, good, okay, low, mixed]
+      description: User's emotional state when writing the entry
+      example: good
+
+    Pagination:
+      type: object
+      properties:
+        limit:
+          type: integer
+          description: Number of items per page
+        offset:
+          type: integer
+          description: Number of items skipped
+        total:
+          type: integer
+          description: Total number of items
+        has_next:
+          type: boolean
+          description: Whether there are more items
+        has_previous:
+          type: boolean
+          description: Whether there are previous items
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Invalid request parameters"
+              message:
+                type: string
+                example: "Entry content cannot be empty"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Unauthorized"
+              message:
+                type: string
+                example: "Valid authentication token required"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Not found"
+              message:
+                type: string
+                example: "Journal entry not found"
